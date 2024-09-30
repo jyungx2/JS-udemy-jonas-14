@@ -142,13 +142,16 @@ console.log(bmw.hasOwnProperty('brake')); // false
 
 // * class declaration
 class PersonCl {
+  // constructor(생성자)를 꼭 명시적으로 추가하진 않아도 됨!
+  // 추가해주지 않으면, 자동으로 기본 생성자(매개변수 X)가 추가되게 된다.
+  // ex) constructor() {}
   constructor(fullName, birthYear) {
     this.fullName = fullName; // firstName -> fullName
     this.birthYear = birthYear;
   }
 
-  // Instance method (=> all the instances can access to these methods)
-  // 🌟 Methods will be added to .prototype property of class('PersonCl')
+  // 🌟 Instance method (=> all the instances can access to these methods)
+  // Methods will be added to .prototype property of class('PersonCl')
   // constructor 함수 바깥에 쓰는 멤버들은 PersonCl의 Prototype에 저장된다.
   // this(객체) 상에 저장되지 않고, PersonCl에 의해 만들어진 모든 객체가 공유할 수 있는 값으로 선언됨.
   calcAge() {
@@ -163,7 +166,7 @@ class PersonCl {
   get age() {
     return 2037 - this.birthYear;
   }
-  // => prototype에 설정해준 어느 regular method와 동일하게 작동
+  // => prototype에 설정해준 여느 regular method와 동일하게 작동
 
   // These getter and setter can be very useful in ✨Data validation✨!
   // 📌 Set a property that already exists
@@ -187,11 +190,13 @@ class PersonCl {
   }
 
   // 🌟 Static method (= all the objects that constructor inside of this class generated cannot access to this static method)
+  // static 예약어로 선언된 프라퍼티와 메서드를 말하며, 객체 멤버는 static예약어로 선언되지 않은 프라퍼티, 메서드이다.(=instance method) 클래스 내에 선언되기는 하지만, 프로토타입에 추가되지 않기 때문에 객체로 이용되기 위한 멤버가 아니다.
   static hey() {
     console.log(`Hey there 👍`);
     console.log(this);
   }
 }
+// new : 생성자 호출 operator
 const jesscia = new PersonCl('Jessica Davis', 1996);
 console.log(jesscia); // {firstName: 'Jessica', birthYear: 1996}
 jesscia.calcAge(); // 41
@@ -277,13 +282,13 @@ console.log(steven);
 // steven.name = 'Steven';
 // steven.birthYear = 2002;
 steven.init('Steven', 2002);
-steven.calcAge();
+steven.calcAge(); // 35 (위의 birthYear = 2002으로 정해져서)
 
 console.log(steven.__proto__ === Personproto); // true
 
 const sarah = Object.create(Personproto);
 sarah.init('Sarah', 1979);
-sarah.calcAge(); // 58
+sarah.calcAge(); // 58 (위의 birthYear = 1979으로 정해져서)
 
 // Coding challenge #2
 class Car2 {
@@ -346,7 +351,7 @@ const Student = function (firstName, birthYear, course) {
   // => duplicate code is a bad practice always!! => ✨Let's simply call the Person function!✨
   //   this.firstName = firstName;
   //   this.birthYear = birthYear;
-  Person.call(this, firstName, birthYear); // this keyword = undefined
+  Human.call(this, firstName, birthYear); // this keyword = undefined
   // 여기서 Person 생성자함수는 그냥 일반 함수로서 불러와지고 있다. 일반 함수의 this = undefined.
   // 우리는 This keyword를 매뉴얼리하게 설정해줄 필요가 있다!! -> 'call/apply/bind' method 이용
   this.course = course;
@@ -381,6 +386,392 @@ console.log(mike.__proto__.__proto__); // calcAge() => Human.prototype.calcAge =
 // 💥this is needed to be fixed.
 console.log(Student.prototype.constructor); // Human function -> this should point back to the 💥Student💥
 // -> 이렇게 나오는 이유는, student의 prototype property를 Object.create()을 이용해 Human.prototype으로 세팅해줬기 때문이다. 이게 studnet.prototype의 constructor가 Human인 이유...
-// Student.prototype에서 다시 constructor로 돌아가면 다시 원래의 생성자 함수인 Student가 나오는게 맞다. 그런데 여기선 더 상위의 상속받는 Human function constructor가 출력된다.. 이는 처음에 객체 생성할 때, Object.create()로 Student.prototype을 Human.prototype으로 설정해주어
+// Student.prototype에서 다시 constructor로 돌아가면 다시 원래의 생성자 함수인 Student가 나오는게 맞다. 그런데 여기선 더 상위의 상속받는 Human function constructor가 출력된다.. 이는 처음에 객체 생성할 때, Object.create()로 Student.prototype을 Human.prototype으로 설정해주어 더 이상 Student가 아닌, Human 생성자 함수로 나오게 되는 것! -> 다시 Student로 되돌리고 싶다면?
+
+Student.prototype.constructor = Student;
+console.dir(Student.prototype.constructor); // 👍 이제는 Human이 아닌, Student로 나온다!
+
 console.log(mike.__proto__ === Student.prototype); // true
 console.log(mike.__proto__.__proto__ === Human.prototype); // true
+
+console.log(mike instanceof Student); // true
+console.log(mike instanceof Human); // true => Object.create()으로 💫Linking prototype해줬기 때문에 true
+console.log(mike instanceof Object); // true => Object는 모든 생성자함수의 최상위 객체이므로 당연히 Human과도 연결✅
+
+// 220. Coding Challenge #3
+const EV = function (make, speed, charge) {
+  Car.call(this, make, speed); // 이때, Car는 생성자 함수여야 함. class/Object.create()는 그들끼리 먹힘!!
+  this.charge = charge;
+};
+
+// Link the prototypes -> 순서 중요! (prototypal inheritance)
+EV.prototype = Object.create(Car.prototype);
+
+EV.prototype.chargeBattery = function (chargeTo) {
+  this.charge = chargeTo;
+};
+
+// 매개변수 없다!! 모두 this.~ 만 이용.
+EV.prototype.accelerate = function () {
+  this.speed += 20;
+  this.charge--;
+  console.log(
+    `${this.make} is going at ${this.speed} km/h, with a charge of ${this.charge}%`
+  );
+};
+
+const tesla = new EV('Tesla', 120, 23);
+console.log(tesla); // EV {make: 'Tesla', speed: 120, charge: 23}
+tesla.chargeBattery(90);
+tesla.brake(); // Tesla is going at 115
+tesla.accelerate(); // Tesla is going at 135 km/h, with a charge of 89%
+// => accelerate() 메서드는 Car.prototype에도 동일한 이름의 함수가 있었는데도, EV.prototype에 있는 accerlate() 사용함!
+// 이는 prototype chain에서 자신의 생성자 함수의 Prototype과 가장 가까운 것을 우선으로 찾아서 사용하기 때문!
+// EV.prototype - Car.prototype - Object.prototype 순으로 prototype chain은 올라간다.(깊어진다.)
+// Basically, child class(= EV.prototype.accelrate()) can overwrite a method(= Car.prototype.accelerate()) that inherited from the parent class.
+// 따라서 EV.prototype에 있는 accerlate()를 지워도, 여전히 오류 안나고 작동할것! Car.prototype에도 동일한 이름의 메서드가 존재하기 때문에 그거 사용하면 되니까 ㅎㅎ 다만 우선순위가 다를뿐~!
+
+// How we can have one class inherit from another class using constructor functions.
+
+// 221. Inheritance between 'Classes': ES6 Classes => Modern JS에서 가장 많이 쓰임!!
+// 214. ES6 Classes 에서 만든 class 가져오기.
+class PersonCl2 {
+  constructor(fullName, birthYear) {
+    this.fullName = fullName;
+    this.birthYear = birthYear;
+  }
+
+  // Instance method (=> all the instances can access to these methods)
+  calcAge() {
+    console.log(2037 - this.birthYear);
+  }
+
+  greet() {
+    console.log(`Hey ${this.fullName}`);
+  }
+
+  get age() {
+    return 2037 - this.birthYear;
+  }
+
+  set fullName(name) {
+    if (name.includes(' ')) this._fullName = name;
+    else alert(`${name} is not a full name!`);
+  }
+
+  get fullName() {
+    return this._fullName;
+  }
+
+  // 🌟 Static method
+  static hey() {
+    console.log(`Hey there 👍`);
+    console.log(this);
+  }
+}
+
+class StudentCl extends PersonCl2 {
+  constructor(fullName, birthYear, course) {
+    // PersonCl2.call(this, fullName, birthYear)
+    // we don't need to do this!!
+
+    // Always needs to happen first!!
+    // subclass안에 this keyword를 만드는 역할을 하기 때문에, 이 코드 없이는 this.course = course 코드가 작동이 안된다!!
+    super(fullName, birthYear);
+    this.course = course;
+  }
+
+  introduce() {
+    console.log(`My name is ${this.fullName}, and I study ${this.course}`);
+  }
+
+  calcAge() {
+    console.log(
+      `I'm ${
+        2037 - this.birthYear
+      } years old, but as a student I feel more like ${
+        2037 - this.birthYear + 10
+      }`
+    );
+  }
+}
+
+// 💥 extends 키워드의 강력함...
+// class간의 prototypal inheritance는 extends 키워드로 부모 클래스의 prototype까지 자동으로 연결되기 때문에 굳이 Constructor function에서 했던 것처럼 Linking the prototype 과정이 필요없음!!
+
+// const martha = new StudentCl('Martha Jones', 2012);
+// 또한, 굳이 새로운 프라퍼티를 추가할 필요가 없다면, 굳이 child class내에 constructor 함수를 쓰지 않아도 extends만 써주면 parent에 정의돼있는 프라퍼티들은 그대로 복사된다는 것을 알고 있자.
+// 새로운 프라퍼티(멤버)를 추가해서 정의하고 싶을 때만, constructor 함수 내부에 subclass(자식class)에 this keyword를 만드는 역할을 하는 super 함수(= 부모 클래스의 생성자함수)를 불러오고, 새로운 멤버를 등록해주는 것이다.
+
+const martha = new StudentCl('Martha Jones', 2012, 'Computer Science');
+martha.introduce();
+martha.calcAge(); // 25 -> child class(StudentCl)에서 같은 이름의 메서드를 정의한 순간, 이 코드의 결과는 더 이상 25가 아니고, 변경한 코드로 바뀜!
+// 사실 이 class 사이에 inheritance은 problematic, dangerous할 수 있다..
+// 나중에 나올 functional programming이 이러한 OOP를 대체할 만한 개념이다.
+
+// 222. Inheritance between 'Classes': Object.create()
+// 아래 Personproto2는 단순 오브젝트일 뿐이다!! => 나중에 Object.create()으로 새로운 객체를 만들 때, 그 객체의 프로토타입으로 지정해주고 싶은 대상이 되는 것일뿐, 생성자함수도 아니고, 클래스도 아니다!!(헷갈려서..)
+const Personproto2 = {
+  calcAge() {
+    console.log(2037 - this.birthYear);
+  },
+
+  // steven.name / steve.birthYear처럼 그 객체에 직접 정의내리는 것보다,
+  // Personproto 프로토타입 자체 내에서 다 처리하도록 하는게 더 효율적!
+  init(firstName, birthYear) {
+    this.firstName = firstName;
+    this.birthYear = birthYear;
+  },
+};
+
+const steven2 = Object.create(Personproto2);
+// Personproto2는 모든 person object의 프로토타입으로 쓰였다.
+// 이때 우리는 새로운 또다른 prototype을 person object와 이 Personproto2 사이에 추가하고 싶다.
+const Studentproto = Object.create(Personproto2);
+// Studentproto object that we created above(⬆️) is now the prototype of the jay object.(⬇️)
+// Personproto2 object is in turn the prototype of Studentproto.
+// => Personproto2 is a parent prototype of jay2. while Studentproto is direct prototype of jay2.
+// => jay2 inherits from Studentproto, which in turn inherits from Personproto2.
+// => jay2 object은 Studentproto 및 Personproto2에 정의된 모든 메서드를 사용할 수 있게 된다.
+
+// 💫 init method를 Studentproto에 추가하자. jay2객체나 다른 새로운 student object에 따로 매뉴얼리하게 정의할 필요 없이...(jay2.name = name ❌)
+Studentproto.init = function (firstName, birthYear, course) {
+  Personproto2.init.call(this, firstName, birthYear);
+  this.course = course;
+};
+
+Studentproto.introduce = function () {
+  console.log(`My name is ${this.fullName}, and I study ${this.course}`);
+};
+
+const jay2 = Object.create(Studentproto);
+jay2.init('Jay', 2010, 'Computer Science'); // setting parameter using an init method in parent prototype (Personproto2)
+jay2.introduce(); // (inherits from direct prototype which is Studentproto)
+jay2.calcAge(); // 27 (inherits from parent prototype which is Personproto2)
+
+// 223. Another Class Example
+// 1) Public fields(=property)
+// 2) Private fields(=property)
+// 3) Public methods
+// 4) Private methods
+// => There is also the static version (using 'static' keyword)
+
+class Account {
+  // 🕯️ How we simply define public fields
+  // => These public fields are gonna be present on all the instances.(=objects) (💥not on the prototype💥)
+  // On the other hand, instance methods(=getMovements/deposit/withdraw...) will always be added on the prototype.
+  // 1) Public fields (on instances) 💎
+  locale = navigator.language;
+  _movements = [];
+
+  // 2) Private fields (on instances) 💎
+  #movements = [];
+  #pin;
+
+  constructor(owner, currency, pin) {
+    this.owner = owner;
+    this.currency = currency;
+
+    // 🌱 protected property > just a convention, 진짜로 data를 private하게 만든게 ❌
+    // this._pin = pin;
+    this.#pin = pin; // change pin to a real private fields
+
+    // 🌱 protected property (truly not private💥)
+    // this._movements = [];
+    // this.locale = navigator.language;
+  }
+
+  // 3) Public methods (on prototype / instance methods) 💎
+  // Public interface
+  // getter 함수를 써도 되지만, 이렇게 get/set으로 시작되는 메서드도 많이 사용한다!
+  getMovements() {
+    return this.#movements;
+  }
+
+  deposit(val) {
+    this.#movements.push(val);
+    // 226. Chaining Methods
+    // this를 리턴하지 않으면, 체이닝 메서드 사용시, 아무것도 리턴되지 않아 Undefined가 리턴되므로 에러가 발생하게 됨.
+    // this = current object이므로, 이걸 리턴함으로써 메서드를 계속해서 체이닝하여 사용할 수 있도록...
+    return this;
+  }
+
+  withdraw(val) {
+    this.deposit(-val);
+    // 226. Chaining Methods
+    return this;
+  }
+
+  // 💫 internal method: 오직 requestLoan 메서드만 사용할 수 있는 메서드
+  // 실제로는 이 방법에 접근 조차 할 수 없고, 하면 안될 것.
+  // => 클래스 내에서만 사용가능하고, Public API의 한 부분이 되면 아니된다.
+  // => 이는 데이터 encapsulation + data privacy을 위해 _을 써준다...
+
+  // 4) Private methods 💎
+  // big problem: no broswer actually supports this hash(#).
+  // #approveLoan(val) {
+  _approveLoan(val) {
+    return true;
+  }
+
+  // static version of 3
+  // static methods are not available on all the instance, but only on the class itself.
+  static helper() {
+    console.log(`Helper!`);
+  }
+
+  requestLoan(val) {
+    // if(this.#approveLoan(val)) {
+    if (this._approveLoan(val)) {
+      this.deposit(val);
+      console.log(`Loan approved!`);
+      // 226. Chaining Methods
+      return this;
+    }
+  }
+}
+
+const acc1 = new Account('Jonas', 'EUR', 1111);
+console.log(acc1);
+
+// This is not a good idea..
+// Instead of interacting with a property like this, it's a lot better
+// ✨to create methods that interact with these properties.✨
+acc1._movements.push(250);
+acc1._movements.push(-140);
+// 224번 강의에서 데이터를 가짜로 프라이빗하게 만들어주기 위에 movements앞에 _를 붙여줬기 때문에,
+// 여기서도 _를 붙이게 되면 원래대로 아무 문제없이 Push할 수 있지만,,, 사실상 이 데이터(movement)는 클래스 외부에서 건드리면 안된다는 것을 알기 때문에 이런 코드를 짜면 안된다는 건 알 고 있을 것이다 ㅎ.
+// 외부에서 이 프라퍼티에 접근할 수 있도록 만들고 싶다면, WE WOULD HAVE TO implement a public method for that.
+
+// we're actually using this public interface that we built in class Account.
+// => This is a lot better than ❌having to manually manipulate these properties outside of the object❌
+acc1.deposit(250);
+acc1.withdraw(140); // withdraw method자체에 -를 붙여줬기 때문에 이젠 더이상 부호를 신경쓰지 않아도 🆗
+
+acc1.requestLoan(1000);
+// acc1.approveLoan(1000);
+
+console.log(acc1.getMovements()); // ) [250, -140, 250, -140, 1000]
+console.log(acc1);
+
+// 224. Encapsulation: Protected Properties and Methods
+// encapsulation: 클래스 내에 선언된 프라퍼티나 메서드가 외부에서 접근하지 못하게 클래스 내부에서 Private하게 유지하는 것.
+// 1. 위에서 movements자체를 push method로 직접 건드리지 않고, deposit, withdraw와 같은 메서드를 선언해준 것도 데이터 프라이버시를 유지하기 위해서 public interface를 만들어준 거였다.
+// => movements라는 프라퍼티를 외부에서 실수로 조작하는 것을 막기 위해 encapsualte해준 것.
+
+// 2. 작은 인터페이스(small API consisting only of a few public methods)를 만들어주면, 외부 코드는 Private methods에 의해 영향을 받지 않기 때문에, 외부코드는 Internal methods를 바꿔주더라도 깨지지 않아 더 자유롭게 데이터를 쉽고 안전하게, 조작할 수 있고 이에 따라 유지보수성도 높아진다.
+
+// 하지만, JS class는 아직 진짜 data privacy, encapsulation을 서포트하지 못한다.
+// 아직 우리가 배우지 않은, private class fields와 메서드를 추가하는 목적이 있지만, 아직 때가 되지 않았다 ..ㅎㅎ 다음 시간에 배울 예정. 그래서 일단 이번 강의에서는 캡슐화를 가짜로 가정해서 해볼 것이다.
+
+// We'll fake encapsulation by simply using a convention.
+// 🍁movements = critical data => we need to protect this data! so no one can manipulate it.
+
+// 225. Encapsulation: Private Class Fields and Methods
+// 이제는 진짜로 프라이빗한 필드와 메서드들에 대해 배워보자.
+// What is this proposal actually called Class fields??
+// 자바나 C++같은 전통적인 oop 언어에서의 프라퍼티는 보통 Field라고 불린다.
+
+// 🕯️ Let's focus on 4 different kinds of fields and methods.
+// Public fields
+// Private fields
+// Public methods
+// Private methods
+
+// console.log(acc1.#movements); // 🚨 Private field must be declared in an enclosing class.
+// movements are now truly private and no longer accessible outside here.
+console.log(acc1.movements); // undefined
+// console.log(acc1.#pin); // 🚨 Private field '#pin' must be declared in an enclosing class
+
+// console.log(acc1.#approveLoan(100)); // 🚨 Private field '#approveLoan' must be declared in an enclosing class
+
+Account.helper();
+
+// 226. Chaining Methods
+acc1.deposit(300).deposit(500).withdraw(35).requestLoan(25000).withdraw(4000);
+console.log(acc1.getMovements());
+// [250, -140, 1000, 300, 500, -35, 25000, -4000]
+
+// 228. Challenge #4
+// 1. Re-createChallenge#3,butthistimeusingES6classes:createan'EVCl' child class of the 'CarCl' class
+// 2. Makethe'charge'propertyprivate
+// 3. Implement the ability to chain the 'accelerate' and 'chargeBattery'
+// methods of this class, and also update the 'brake' method in the 'CarCl' class. Then experiment with chaining!
+
+class CarCl {
+  constructor(make, speed) {
+    this.make = make;
+    this.speed = speed;
+  }
+
+  accelerate() {
+    this.speed += 10;
+    console.log(`${this.make} is going at ${this.speed}`);
+  }
+
+  brake() {
+    this.speed -= 5;
+    console.log(`${this.make} is going at ${this.speed}`);
+    return this;
+  }
+
+  // 가져올 때는 speedUS 프라퍼티를 사용할 것이고,
+  // 가져오는 리턴 값은 speed 값을 1.6으로 나눈 값!
+  get speedUS() {
+    return this.speed / 1.6;
+  }
+
+  // 값을 설정할 때는 (객체이름).speedUS = (?=speed) 신택스 사용. (함수가 아니므로 매개변수 넣듯이 (객체이름).speedUS(?=speed)할 수 없다.)
+  // 설정할 값은 speed 값에 1.6을 곱한 값!
+
+  // 💥아래 예시 참고💥
+  // 📌 Setter 프라퍼티
+  // 메서드가 아닌 프라퍼티이기 때문에 이렇게 쓰면 안된다!
+  // account.latest(50)
+  // account.latest = 50;
+  set speedUS(speed) {
+    this.speed = speed * 1.6;
+  }
+}
+
+class EVCl extends CarCl {
+  #charge;
+  constructor(make, speed, charge) {
+    super(make, speed);
+    this.#charge = charge;
+  }
+
+  chargeBattery(chargeTo) {
+    this.#charge = chargeTo;
+    return this;
+  }
+
+  // 매개변수 없다!! 모두 this.~ 만 이용.
+  accelerate() {
+    this.speed += 20;
+    this.#charge--;
+    console.log(
+      `${this.make} is going at ${this.speed} km/h, with a charge of ${
+        this.#charge
+      }%`
+    );
+    return this;
+  }
+}
+
+const rivian = new EVCl('Rivian', 120, 23);
+console.log(rivian);
+// console.log(rivian.#charge); // 🚨
+// rivian.accelerate();
+// rivian.brake();
+console.log(rivian.speedUS); // 75 -> 120km/h를 1.6으로 나누어 mile로 변환..
+rivian.speedUS = 50; // 50 mile -> km 변환해(* 1.6) this.speed에 설정
+console.log(rivian.speed); // 80 (= 50 * 1.6)
+
+rivian
+  .accelerate()
+  .accelerate()
+  .accelerate()
+  .brake()
+  .chargeBattery(50)
+  .accelerate();
